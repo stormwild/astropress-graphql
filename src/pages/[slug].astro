@@ -1,0 +1,38 @@
+---
+import BlogPost from "../components/BlogPost.astro";
+import Layout from "../layouts/Layout.astro";
+
+import { getFirstPostsQuery } from '../lib/queries'
+
+export async function getStaticPaths() {
+    const response = await fetch(`${import.meta.env.WORDPRESS_URL}/${import.meta.env.GRAPHQL_API_PATH}`,
+        {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                query: getFirstPostsQuery,
+                variables: {
+                    first: 20,
+                },
+            }),
+        })
+
+    const json = await response.json();
+    const posts = json.data.posts.edges
+    return posts.map((post) => {
+        return {
+            params: {
+                slug: post.node.slug
+            },
+            props: { post },
+        }
+    })
+}
+const { slug } = Astro.params;
+const { post } = Astro.props;
+---
+
+<Layout title={post.node.title} metaDescription={post.node.title}>
+    <BlogPost title={post.node.title} content={post.node.content} img={post.node.featuredImage.node.sourceUrl}
+        altText={post.node.featuredImage.node.altText} />
+</Layout>
